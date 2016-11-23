@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load staticfiles %}
+  <script src="https://code.jquery.com/jquery-2.1.3.js"></script>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0"/>
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="{% static 'pgp/css/style.css' %}">
+  <title>Hey, Chef!</title>
+<!--Load the AJAX API-->
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script>
+
+  $(document).ready(function(){
+      var clicked = true
+      $('#view_chart').click(function(){
+        if(clicked){
+        $('#recipe_list').hide('slow',function(){$('#all_charts').fadeTo('slow',1,function(){clicked=false})});
+      }});
+      $('#view_photos').click(function(){
+        if(!clicked){
+        $('#all_charts').fadeTo('slow',0,function(){$('#recipe_list').show('slow',function(){clicked=true})});
+      }})
+            $('form').submit(function(){
+
+                $('html, body').animate({
+                  scrollTop: $("#recipe").offset().top
+                }, 1000);
+
+              var ingredient = $("#ingredient").val();
+              var url = "https://api.edamam.com/search?q="+ingredient
+              $.get(url, function(data){
+                  console.log(data);
+                  var html_str = "";
+                  if(data.count==0){
+                    html_str+="<h3>Sorry, no results! Try another search!</h3><img id='sad_face' src='{% static 'pgp/images/sad_face_01.png' %}'>"
+                  }else{
+                  for(var i=0; i<data.hits.length; i++){
+                    html_str+=('<a class="rec_titles" href=\'/details/'+(data.hits[i].recipe.uri).replace('#',"%23")+'\'><div class="food_img"><img class="pic" src=\''+data.hits[i].recipe.image+'\'><p>'+data.hits[i].recipe.label+'</a></p></div>');
+                  }}
+                  $("#recipe_list").html(html_str);
+              }, 'jsonp');
+              google.charts.load('current', {'packages':['corechart']});
+              google.charts.setOnLoadCallback(drawChart);
+              function drawChart() {
+                  var ingredient = $("#ingredient").val();
+                  var url = "https://api.edamam.com/search?q="+ingredient
+                  $.get(url, function(data){
+                      console.log(data.hits[0].recipe.label);
+                       // Create the data table.
+                       // var calorie_data = "[" + data.hits[0].recipe.label + "," + data.hits[0].recipe.calories+ ", '#b87333'],"
+                       // console.log(calorie_data);
+                       var colors = ['#FC6131', '#FBAA11', '#2C9EA5', '#0FC6C6'];
+                       calorie_data = [['Recipe','Calories', { role: 'style' }]]
+                       var count = 0;
+                       for(var i=1; i<data.hits.length; i++){
+                            calorie_data.push([data.hits[i].recipe.label,data.hits[i].recipe.calories, colors[count]])
+                             if(count>colors.length-1){
+                              count = 0;
+                             }else{
+                              count++;
+                             }
+                        };
+                        // console.log(calorie_data)
+                       var calories = google.visualization.arrayToDataTable(
+                        calorie_data
+                         );
+                      // Set chart options
+                      var options = {'title':'Calories In Each Recipe',
+                                     'width':900,
+                                     'height':700,
+                                     'legend':'none'};
+                      // Instantiate and draw our chart, passing in some options.
+                      var chart = new google.visualization.ColumnChart(document.getElementById('all_charts'));
+                      chart.draw(calories, options);
+                  }, 'jsonp');
+
+                }
+              return false;
+            });
+        });
+
+  </script>
+
+</head>
+<body>
+  <div id="wrapper">
+  </div>
+    <div class="head">
+        <p class="hey"><a href="/"><img class="chef_icon" src="{% static 'pgp/images/chef_icon.png' %}">Hey Chef</a></p> 
+    </div>
+    <div id="background" style="background-image:url({% static 'pgp/images/background.png'%})">
+      <div id="form">
+          <form class="center">
+            <h1 class="letter_in_form">Hey Chef!</h1>
+            <p class="letter">What are we cooking with today?</p>
+            <input class="search" type="text" id="ingredient" placeholder="Ex: Chicken, green onions, eggs" size="65">
+            <p><input class="show_recipes" type="submit" class="btn-large waves-effect waves-light orange" value="Show Recipes"></p>
+          </form>
+      </div>
+    </div>
+
+      <p id="recipe">Recipes</p>
+      <p class="border"></p>
+      <div id="icon_holder">
+        <p class="img_view"><img id="view_photos" src="{% static 'pgp/images/View_icon.png' %}"></p>
+        <p class="img_chart"><img id="view_chart" src="{% static 'pgp/images/Chart_icon.png' %}"></p>
+      </div>
+
+
+    <div id="recipe_list">
+      <h3 class='placeholder'>Search, and see results here!</h3>
+
+
+    </div>
+
+    <div id='all_charts'>
+
+    </div>
+  </div>
+
+  </body>
+</html>
